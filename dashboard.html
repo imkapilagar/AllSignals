@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Signals</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0c0c14;
+            --bg-card: rgba(18, 18, 28, 0.95);
+            --bg-elevated: rgba(28, 28, 42, 0.8);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --text-muted: #606078;
+            --green: #22c55e;
+            --green-dim: rgba(34, 197, 94, 0.15);
+            --red: #ef4444;
+            --red-dim: rgba(239, 68, 68, 0.15);
+            --cyan: #06b6d4;
+            --cyan-dim: rgba(6, 182, 212, 0.15);
+            --purple: #a855f7;
+            --purple-dim: rgba(168, 85, 247, 0.15);
+            --yellow: #eab308;
+            --yellow-dim: rgba(234, 179, 8, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Subtle background */
+        .bg-effects {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 100% 80% at 50% -30%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 80% 60% at 100% 100%, rgba(168, 85, 247, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse 80% 60% at 0% 100%, rgba(34, 197, 94, 0.04) 0%, transparent 50%);
+        }
+
+        .grid-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* Main container */
+        .dashboard {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            padding: 20px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--cyan) 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-divider {
+            width: 1px;
+            height: 28px;
+            background: var(--border-subtle);
+        }
+
+        .date-display {
+            font-size: 15px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .info-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .info-value.highlight {
+            color: var(--cyan);
+        }
+
+        .dte-chip {
+            padding: 8px 20px;
+            background: linear-gradient(135deg, var(--cyan-dim), var(--purple-dim));
+            border: 1px solid var(--cyan);
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--cyan);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(6, 182, 212, 0.35); }
+        }
+
+        /* Main grid */
+        .signals-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            min-height: 0;
+        }
+
+        /* Card base */
+        .card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+            transition: all 0.3s ease;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .card.bid::before { background: var(--cyan); }
+        .card.bid:hover { box-shadow: 0 20px 40px rgba(6, 182, 212, 0.15); }
+
+        .card.pricegap::before { background: var(--purple); }
+        .card.pricegap:hover { box-shadow: 0 20px 40px rgba(168, 85, 247, 0.15); }
+
+        .card.sixthsense::before { background: var(--yellow); }
+        .card.sixthsense:hover { box-shadow: 0 20px 40px rgba(234, 179, 8, 0.15); }
+
+        .card.coverage::before { background: var(--green); }
+        .card.coverage:hover { box-shadow: 0 20px 40px rgba(34, 197, 94, 0.15); }
+
+        /* Card header */
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .card-num {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 8px;
+        }
+
+        .bid .card-num { background: var(--cyan-dim); color: var(--cyan); }
+        .pricegap .card-num { background: var(--purple-dim); color: var(--purple); }
+        .sixthsense .card-num { background: var(--yellow-dim); color: var(--yellow); }
+        .coverage .card-num { background: var(--green-dim); color: var(--green); }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        /* Data rows */
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .data-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .data-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .data-value {
+            font-size: 17px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .positive { color: var(--green); }
+        .negative { color: var(--red); }
+
+        /* Signal indicator */
+        .signal-box {
+            margin-top: auto;
+            padding: 14px;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .signal-icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .signal-icon.up {
+            background: var(--green-dim);
+            color: var(--green);
+            animation: float-up 2s ease-in-out infinite;
+        }
+
+        .signal-icon.down {
+            background: var(--red-dim);
+            color: var(--red);
+            animation: float-down 2s ease-in-out infinite;
+        }
+
+        @keyframes float-up {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        @keyframes float-down {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(4px); }
+        }
+
+        .signal-content {
+            flex: 1;
+        }
+
+        .signal-text {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .signal-date {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 3px;
+            font-weight: 500;
+        }
+
+        /* Table styles */
+        .mini-table {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1.1fr;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .table-header span:not(:first-child) { text-align: right; }
+
+        .table-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1.1fr;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .table-row span:not(:first-child) { text-align: right; }
+        .table-row span:first-child { color: var(--text-secondary); }
+
+        .change-pill {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .change-pill.positive { background: var(--green-dim); color: var(--green); }
+        .change-pill.negative { background: var(--red-dim); color: var(--red); }
+
+        /* Premium table */
+        .premium-header {
+            display: grid;
+            grid-template-columns: 1.1fr 0.6fr 1.1fr 0.8fr 1fr;
+            gap: 6px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .premium-header span:not(:first-child) { text-align: right; }
+
+        .premium-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        .premium-row {
+            display: grid;
+            grid-template-columns: 1.1fr 0.6fr 1.1fr 0.8fr 1fr;
+            gap: 6px;
+            padding: 10px 0;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .premium-row:last-child { border-bottom: none; }
+        .premium-row span:not(:first-child) { text-align: right; }
+
+        .index-name {
+            font-weight: 700;
+            color: var(--cyan);
+        }
+
+        .premium-val {
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        /* Footer */
+        .footer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 0;
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; box-shadow: 0 0 10px var(--green); }
+            50% { opacity: 0.5; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-effects"></div>
+    <div class="grid-overlay"></div>
+
+    <div class="dashboard">
+        <header class="header">
+            <div class="logo-section">
+                <div class="logo">Trading Signals</div>
+                <div class="logo-divider"></div>
+                <div class="date-display" id="current-date">Monday, 9 Feb 2026</div>
+            </div>
+            <div class="header-info">
+                <div class="info-block">
+                    <span class="info-label">Index</span>
+                    <span class="info-value highlight" id="instrument-name">NIFTY</span>
+                </div>
+                <div class="info-block">
+                    <span class="info-label">Expiry</span>
+                    <span class="info-value" id="expiry-date">2026-02-10</span>
+                </div>
+                <div class="dte-chip" id="dte-badge">0 DTE</div>
+            </div>
+        </header>
+
+        <div class="signals-grid">
+            <!-- BID Signal -->
+            <div class="card bid">
+                <div class="card-header">
+                    <div class="card-num">1</div>
+                    <div class="card-title">BID Signal</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">3:30 PM LTP (Prev)</span>
+                    <span class="data-value" id="bid-ltp">25,673.60</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">9:15 AM Open</span>
+                    <span class="data-value" id="bid-open">25,888.70</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Gap</span>
+                    <span class="data-value positive" id="bid-gap">+215.10 (+0.84%)</span>
+                </div>
+                <div class="signal-box">
+                    <div class="signal-icon up" id="bid-arrow">▲</div>
+                    <div class="signal-content">
+                        <div class="signal-text positive" id="bid-direction">Gap Up</div>
+                        <div class="signal-date" id="bid-dates">2026-02-06 → 2026-02-09</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PriceGap Signal -->
+            <div class="card pricegap">
+                <div class="card-header">
+                    <div class="card-num">2</div>
+                    <div class="card-title">PriceGap Signal</div>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">3:30 PM LTP</span>
+                    <span class="data-value" id="pg-ltp">25,863.30</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Daily Close</span>
+                    <span class="data-value" id="pg-close">25,867.30</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">Gap</span>
+                    <span class="data-value negative" id="pg-gap">-4.00 (-0.02%)</span>
+                </div>
+                <div class="signal-box">
+                    <div class="signal-icon down" id="pg-arrow">▼</div>
+                    <div class="signal-content">
+                        <div class="signal-text negative" id="pg-direction">LTP &lt; Close</div>
+                        <div class="signal-date" id="pg-date">2026-02-09</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SixthSense Signal -->
+            <div class="card sixthsense">
+                <div class="card-header">
+                    <div class="card-num">3</div>
+                    <div class="card-title">SixthSense</div>
+                </div>
+                <div class="mini-table">
+                    <div class="table-header">
+                        <span>Date</span>
+                        <span>Open</span>
+                        <span>Close</span>
+                        <span>Change</span>
+                    </div>
+                    <div class="table-body" id="sixthsense-body">
+                        <div class="table-row">
+                            <span>02-03</span>
+                            <span>26,308</span>
+                            <span>25,728</span>
+                            <span class="change-pill negative">-2.21%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coverage Premium -->
+            <div class="card coverage">
+                <div class="card-header">
+                    <div class="card-num">4</div>
+                    <div class="card-title">Coverage Premium</div>
+                </div>
+                <div class="mini-table">
+                    <div class="premium-header">
+                        <span>Index</span>
+                        <span>DTE</span>
+                        <span>Spot</span>
+                        <span>Pct</span>
+                        <span>Premium</span>
+                    </div>
+                    <div class="premium-body" id="coverage-body">
+                        <div class="premium-row">
+                            <span class="index-name">NIFTY</span>
+                            <span>0</span>
+                            <span>25,867</span>
+                            <span>0.54%</span>
+                            <span class="premium-val">139.68</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <span class="live-dot"></span>
+            <span>Live</span>
+            <span>•</span>
+            <span id="timestamp">17:30:00</span>
+        </footer>
+    </div>
+
+    <script>
+        function formatNumber(num, decimals = 2) {
+            if (num === null || num === undefined) return 'N/A';
+            return num.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+        }
+
+        function formatCompact(num) {
+            if (num === null || num === undefined) return 'N/A';
+            return num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+
+        function formatGap(gap, pct) {
+            if (gap === null || pct === null) return 'N/A';
+            const sign = gap >= 0 ? '+' : '';
+            return `${sign}${formatNumber(gap)} (${sign}${pct.toFixed(2)}%)`;
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('timestamp').textContent = now.toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-IN', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function updateDashboard(data) {
+            if (data.error) return;
+
+            document.getElementById('instrument-name').textContent = data.instrument || 'N/A';
+            document.getElementById('expiry-date').textContent = data.expiry_date || 'N/A';
+            document.getElementById('dte-badge').textContent = `${data.dte} DTE`;
+
+            // BID
+            const bid = data.bid;
+            document.getElementById('bid-ltp').textContent = formatNumber(bid.ltp_330);
+            document.getElementById('bid-open').textContent = formatNumber(bid.open_915);
+            const bidGapEl = document.getElementById('bid-gap');
+            bidGapEl.textContent = formatGap(bid.gap, bid.gap_pct);
+            bidGapEl.className = 'data-value ' + (bid.direction === 'up' ? 'positive' : 'negative');
+
+            const bidArrow = document.getElementById('bid-arrow');
+            bidArrow.textContent = bid.direction === 'up' ? '▲' : '▼';
+            bidArrow.className = 'signal-icon ' + (bid.direction === 'up' ? 'up' : 'down');
+
+            const bidDir = document.getElementById('bid-direction');
+            bidDir.textContent = bid.direction === 'up' ? 'Gap Up' : 'Gap Down';
+            bidDir.className = 'signal-text ' + (bid.direction === 'up' ? 'positive' : 'negative');
+            document.getElementById('bid-dates').textContent = `${bid.prev_date} → ${bid.today_date}`;
+
+            // PriceGap
+            const pg = data.pricegap;
+            document.getElementById('pg-ltp').textContent = formatNumber(pg.ltp_330);
+            document.getElementById('pg-close').textContent = formatNumber(pg.daily_close);
+            const pgGapEl = document.getElementById('pg-gap');
+            pgGapEl.textContent = formatGap(pg.gap, pg.gap_pct);
+            pgGapEl.className = 'data-value ' + (pg.direction === 'up' ? 'positive' : 'negative');
+
+            const pgArrow = document.getElementById('pg-arrow');
+            pgArrow.textContent = pg.direction === 'up' ? '▲' : '▼';
+            pgArrow.className = 'signal-icon ' + (pg.direction === 'up' ? 'up' : 'down');
+
+            const pgDir = document.getElementById('pg-direction');
+            pgDir.textContent = pg.direction === 'up' ? 'LTP > Close' : 'LTP < Close';
+            pgDir.className = 'signal-text ' + (pg.direction === 'up' ? 'positive' : 'negative');
+            document.getElementById('pg-date').textContent = pg.date;
+
+            // SixthSense
+            const ssBody = document.getElementById('sixthsense-body');
+            ssBody.innerHTML = '';
+            data.sixthsense.forEach(row => {
+                const cls = row.change >= 0 ? 'positive' : 'negative';
+                const sign = row.change >= 0 ? '+' : '';
+                const shortDate = row.date.slice(5);
+                const div = document.createElement('div');
+                div.className = 'table-row';
+                div.innerHTML = `
+                    <span>${shortDate}</span>
+                    <span>${formatCompact(row.open)}</span>
+                    <span>${formatCompact(row.close)}</span>
+                    <span class="change-pill ${cls}">${sign}${row.change.toFixed(2)}%</span>
+                `;
+                ssBody.appendChild(div);
+            });
+
+            // Coverage
+            const covBody = document.getElementById('coverage-body');
+            covBody.innerHTML = '';
+            data.coverage.instruments.forEach(inst => {
+                const div = document.createElement('div');
+                div.className = 'premium-row';
+                div.innerHTML = `
+                    <span class="index-name">${inst.name}</span>
+                    <span>${inst.dte}</span>
+                    <span>${formatCompact(inst.spot)}</span>
+                    <span>${inst.pct.toFixed(2)}%</span>
+                    <span class="premium-val">${formatNumber(inst.premium)}</span>
+                `;
+                covBody.appendChild(div);
+            });
+        }
+
+        async function fetchSignals() {
+            try {
+                const response = await fetch('/api/signals');
+                const data = await response.json();
+                updateDashboard(data);
+            } catch (error) {
+                console.error('Failed to fetch:', error);
+            }
+        }
+
+        updateTimestamp();
+        setInterval(updateTimestamp, 1000);
+        fetchSignals();
+        setInterval(fetchSignals, 60000);
+    </script>
+</body>
+</html>
